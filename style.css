@@ -3,5 +3,60 @@
     HWU ID: H00301592
     Email: kd41@hw.ac.uk
     Creation Date: 15/03/2022
-    Laste Edit: 15/03/2022
+    Last Edit: 15/03/2022
 */
+html, body { height: 100%; width: 100%; margin: 0; }
+
+#container {
+    margin: 2.5%;
+    display: grid;
+    gap: 10px;
+    grid-auto-rows: minmax(100px, auto);
+}
+
+#currentChart {
+    position: relative;
+    width: 90%;
+    height: 80%;
+    margin: auto;
+    border-style: dashed;
+    top: 10%;
+    overflow: scroll;
+}
+
+#header {
+    width: 100%;
+    height: 10%;
+    background-color: gray;
+}
+
+.dropBtn {
+    width: 10%;
+}
+
+.dropResult {
+    background-color: lightseagreen;
+    width: 10%;
+}
+
+.buttonText {
+    font-size: 8px;
+}
+
+.chartButton {
+    position: relative;
+    width: 10%;
+    height: 10%;
+    top: 80%;
+    left: 20%;
+    border-width: 0;
+    background-color: transparent;
+    margin: 5%;
+}
+
+.record {
+    border-style: double;
+    width: 150px;
+    height: 150px;
+    margin: 10px;
+}
