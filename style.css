@@ -31,15 +31,15 @@ html, body { height: 100%; width: 100%; margin: 0; }
 }
 
 .dropBtn {
-    width: 10%;
+    background-color: blue;
+    width: 30%;
+    font-size: 8px;
 }
 
 .dropResult {
     background-color: lightseagreen;
-    width: 10%;
-}
-
-.buttonText {
+    border-style: solid;
+    width: 35%;
     font-size: 8px;
 }
 
@@ -59,4 +59,8 @@ html, body { height: 100%; width: 100%; margin: 0; }
     width: 150px;
     height: 150px;
     margin: 10px;
+}
+
+.val {
+    color: red;
 }

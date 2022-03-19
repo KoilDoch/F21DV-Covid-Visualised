@@ -18,11 +18,11 @@ d3.select("body")
     .style("grid-template-columns", "repeat("+gridLayout+", 1fr)");
 
 // create a new bar chart
-let barChart = BarChart().createChart(
-    d3.select('body'),
-    dataURL
+let barChart = BarChart().CreateChart(
+    dataURL,
+    d3.select('body')
 );
 
-function updateBar(category) {
+window.updateBar = (category) => {
     barChart.update(category);
 }
