@@ -2,7 +2,6 @@
     Author: Kyle Dick
     HWU ID: H00301592
     Email: kd41@hw.ac.uk
-    Creation Date: 15/03/2022
     Last Edit: 15/03/2022
 */
 

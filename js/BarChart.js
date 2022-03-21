@@ -2,192 +2,255 @@
     Author: Kyle Dick
     HWU ID: H00301592
     Email: kd41@hw.ac.uk
-    Creation Date: 15/03/2022
-    Last Edit: 16/03/2022
+    Last Edit: 21/03/2022
 */
+import { DataMap } from "./DataMap.js";
 
+/**
+ * An object which represents a bar chart
+ * 
+ * SetData(data, out)
+ *      This function calls the dataMap to set up the data into a format usable by the chart.
+ *      Utilises a then() to wait for the data to finish setting, then calls the remaining 'set up' functions
+ *      @param data - the source of this charts data (unfiltered)
+ *      @param out - the area of the page to display this chart
+ * 
+ * SetOutput(out)
+ *      This function creates a new svg to display the chart, removing any previous displays of itself before doing so.
+ *      Measurements for the chart display are set in here relative to the 'out' objects dimensions
+ *      @param out - the area of the page to display this chart
+ * 
+ * CreateDropDown()
+ *      Creates a drop down select menu from which the user can change the data shown within this current dataset.
+ *      Utilises the dataMap function FilterData(x,y) to reflect this change in the data
+ * 
+ * SetScales()
+ *      Setup the scales required for the chart
+ *      @param axisDrawn - is the axis drawn previously or not, used to decide whether append is neccessary
+ *      
+ * Update()
+ *      Function used to update the chart when a change is made to the data, or the data is set for the first time.
+ *      Contains the join call and its associated enter, update and exit calls
+ * 
+ * DisplayValue()
+ *      Hover function for the bars, displays a value when hovered
+ *      @param d - the mouse event
+ *      @param i - data associated 
+ *
+ * HideValue()
+ *      Hover function for the bars, removes a displayed value
+ */
 export function BarChart() {
-    let obj = {};     
-    let data = [];
-    let dataMap = [];
-    let categories = [];
-    let svg, currCategory, xScale, yScale, width;
+    let obj = {};
+    let dataMap = DataMap();        // object from which the data is sourced
+    let svg, xScale, yScale, width;
     // set the dimensions and margins of the graph 
-    const margin = {top: 60, right: 30, bottom: 70, left: 60};
+    const margin = {top: 60, right: 30, bottom: 70, left: 90};
     const height = 400 - margin.top - margin.bottom;
 
-    obj.CreateChart = (url, out) => {
-        obj.setData(url);
-        obj.setOutput(out);
-    }
-
-    // set the data to be used for this chart
-    obj.setData = (url, category = '') => {
-        d3.csv(url, (d) => {
-            data.push(d);
-        }).then( () => {
-            // get the categories from the headers
-            obj.GetCatergories();
-            obj.filterData();
-        })
+    obj.SetData = (data, out) => {
+        console.log('Changing Chart Dataset...');
+        dataMap.SetData(data).then(() => {
+            console.log("Datamap Set!");
+            obj.SetOutput(out);
+            obj.CreateDropDown();
+            obj.SetScales(1);
+            obj.Update();
+        });
     }
 
     // chooses where the output should be
-    obj.setOutput = (out) => {
+    obj.SetOutput = (out) => {
         // remove the current chart to change output
         d3.select('#currentDisplay').remove();
-        width = data.length * 10 - margin.left - margin.right; 
+        width = dataMap.GetDataMap().length * 10; 
+        console.log(`width: ${width}%`);
 
         svg = out.append('svg')
-                .attr('width', width + margin.left + margin.right)
+                .attr('width', `${width}%`)
                 .attr('height', height + margin.left + margin.right)
                 .attr('margin', 'auto')
                 .attr('id', 'currentDisplay');
     }
 
-    // filter from data source what is to be shown
-    obj.filterData = () => {
-        dataMap = data.map((d) => {
-            return {
-                key: d.location,
-                value: d[currCategory]
-            }
-        }); 
+    /**
+     * Creates a drop down select menu from which the user can change the data shown within this current dataset.
+     * Utilises the dataMap function FilterData(x,y) to reflect this change in the data
+     */
+    obj.CreateDropDown = () => {
+        console.log('Creating Dropdown...')
 
-        obj.update();
-    }
-    
-    obj.GetCatergories = () => {
-        // get list of categories for this dataset
-        categories = []
-        for(let cat in data[0]) {
-            categories.push(cat);
-        }
-        categories = categories.slice(4)
-        currCategory = categories[0];
-
-        obj.createDropDown();
-    }
-
-    
-
-    // create drop down menu to change data shown
-    obj.createDropDown = () => {
+        // add a select element to the header element
         let dropdown = d3.select('#header')
                         .append('select')
                         .attr('id', 'dropDown')
                         .on('change', () => {
-                            currCategory = d3.select("#dropDown").node().value;
-                            obj.filterData();
+                            // on a change of selection, change data to reflect
+                            console.log('Changing Currently Shown Data...')
+
+                            // get data from the node value
+                            let newCategory = d3.select("#dropDown").node().value;
+                            console.log(`Changing to ${newCategory}`);
+
+                            // filter the data then update the chart
+                            dataMap.FilterData('location', newCategory);
+                            obj.Update();
                         });
 
+        // add options to the drop down using the categories
         dropdown.selectAll('option')
-            .data(categories)
+            .data(dataMap.GetCategories())
             .enter()
             .append("option")
                 .attr('value', d => {return d})
                 .text(d => {return d});
+
+        console.log('Dropdown created!');
+    }
+
+    //************** AXES ******************//
+
+    /**
+     * Setup the scales required for the chart
+     * @param axisDrawn - is the axis drawn previously or not, used to decide whether append is neccessary
+     */
+    obj.SetScales = (axisDrawn) => {
+        console.log('setting scales...');
+
+        let data = dataMap.GetDataMap();
+        
+        // get the boundaries of the y axis
+        let extent = d3.extent(data, d => {
+            return +d.value;
+        })
+        
+        // banded scale due to ordinal nature of x
+        xScale = d3.scaleBand()
+            .domain(data.map( (d) => {
+                return d.key;
+            }))
+            // scale to the size of the output
+            .range([margin.left, width]);
+
+        // Y scale and axis
+        // get y scale using largest value in the specified category
+        yScale = d3.scaleLinear()
+            .domain([0, extent[1]])
+            // scale to size of the output
+            .range([height,0]);
+
+
+        // append or select depending on if the axis already exists
+        let xAxis, yAxis;
+        if(axisDrawn){
+            xAxis = svg.append('g')
+                .attr('class', 'xAxis')
+                .attr('transform', `translate(0, ${height})`);
+
+            yAxis = svg.append('g')
+            .attr('class', 'yAxis')
+            .attr('transform', `translate(${margin.left},0)`)
+        } else {
+            xAxis = d3.select('.xAxis');
+            yAxis = d3.select('.yAxis');
+        }
+
+        // transition the appearances of each axis
+        xAxis.transition()
+            .duration(1000)
+            .ease(d3.easePoly)
+            .call(d3.axisBottom(xScale))
+            .selectAll('text')
+            .style('font-size', '8px')
+            .attr('y', 0)
+            .attr('x', 50)
+            .attr('transform', 'rotate(90)');
+
+        yAxis.transition()
+            .duration(1000)
+            .ease(d3.easePoly)
+            .call(d3.axisLeft(yScale))
+            
+            
+        console.log('Scales Created!');
     }
 
     //************* DRAWING AND UPDATE *************//
+    /**
+    *   Function used to update the chart when a change is made to the data, or the data is set for the first time.
+    *   Contains the join call and its associated enter, update and exit calls
+    */
+    obj.Update = () => {
+        // get the data and set the scales (already drawn)
+        let data = dataMap.GetDataMap();
+        obj.SetScales(0);
 
-    obj.update = () => {
-        console.log(currCategory);
-        console.log(dataMap);
-        obj.setScales(currCategory);
-        
-
+        // create a reference to all the existing rect (if any)
         let ref = svg.selectAll('rect')
-            .data(dataMap)
+            .data(data);
 
-        xScale.domain(dataMap.map(d => d.key));
-
-        d3.select("#bottomAxis")
-            .call(d3.axisBottom(xScale));
-        d3.select("#topAxis")
-            .call(d3.axisTop(xScale));
-
-            ref.join(
+        // decide what to do with the data for each entry
+        ref.join(
+            // new rect required
             enter => {
                 enter.append('rect')
-                    .on('mouseover', displayValue)
-                    .on('mouseout', hideValue)
+                    // attach events to show values
+                    .on('mouseover', DisplayValue)
+                    .on('mouseout', HideValue)
                     .merge(ref)
-                    .attr('x', (d) => { 
-                        return xScale(d.key) + 2
+                    .attr('x', (d) => {
+                        if(d.key == 'Afghanistan')
+                            console.log('in enter!');
+                        // offset the name slightly
+                        return xScale(d.key);
                     })
-                    .attr('y', d => { 
-                        console.log(yScale(0));
-                        return yScale(+d.value)
-                    })
-                    .attr("width", xScale.bandwidth()-4) 
+                    .attr("width", xScale.bandwidth()) 
+                    .attr('y', yScale(0))
+                    // grow the bars upwards
                     .transition()
                     .duration(1000)
-                    .attr("height", function(d) { 
-                        return height - yScale(+d.value);
-                    });
-            },
-            update => {
-                update.transition() 
-                    .duration(1000) 
                     .attr('y', d => { 
                         return yScale(+d.value)
                     })
                     .attr("height", function(d) { 
-                        console.log(d);
+                        // offset the height from out height
                         return height - yScale(+d.value);
                     });
             },
+            // rect exists, requires update
+            update => {
+                // shrink/grow to required height
+                update.transition() 
+                    .duration(1000) 
+                    // without this, will not appear at the correct height
+                    .attr('y', d => { 
+                        if(d.key == 'Afghanistan')
+                            console.log('in update!');
+                        return yScale(+d.value)
+                    })
+                    .attr("height", function(d) { 
+                        return height - yScale(+d.value);
+                    });
+            },
+            // rect no longer needed
             exit => {
+                // fade out over half a second, then remove
                 exit.transition()
-                    .duration(500)
-                    .attr("x", width)
+                    .duration(1000)
                     .style("opacity",0)
                     .remove();
             }
         );
     }
 
-    //************** AXES ******************//
-    obj.setScales = () => {
-    // X scale and axis
-    xScale = d3.scaleBand()
-        .domain(dataMap.map( (d) => {
-            return d.key;
-        }))
-        .range([margin.left, width]);
-
-    svg.append('g')
-        .attr('class', 'xAxis')
-        .attr('transform', `translate(0, ${height})`)
-        .call(d3.axisBottom(xScale))
-        .selectAll('text')
-        .style('font-size', '8px')
-        .attr('y', 0)
-        .attr('x', 50)
-        .attr('transform', 'rotate(90)');
-
-    // Y scale and axis
-    // get y scale using largest value in the specified category
-    yScale = d3.scaleLinear()
-        .domain([0, d3.max(dataMap, (d) => {
-            return +d.value
-        }
-        )])
-        .range([height,0]);
-
-    let yAxis = d3.axisLeft(yScale);
-    svg.append('g')
-        .attr('class', 'yAxis')
-        .attr('transform', `translate(${margin.left},0)`)
-        .call(yAxis);
-    }
-
     //************* EVENTS *************//
 
-    // displays the value when hovering over the bar
-    let displayValue = (d,i) => {
-        console.log(currCategory);
+    /**
+     * Hover function for the bars, displays a value when hovered
+     * @param d - the mouse event
+     * @param i - data associated 
+     */
+    let DisplayValue = (d,i) => {
         //display the value
         svg.append("text") 
             .attr('class', 'val')  
@@ -197,11 +260,14 @@ export function BarChart() {
             .attr('y', function() { 
                 return yScale(i.value) - 5;
             }) 
-            .text( function(d) { return +i.value; } ); // Value of the text 
+            .text( function(d) { return +i.value; } )
+            .style('color', 'red'); // Value of the text 
     }
 
-    // hide the value of the text when not hovering
-    let hideValue = () => {
+    /**
+     * Hover function for the bars, removes a displayed value
+     */
+    let HideValue = () => {
         d3.selectAll(".val").remove();
     }
 
