@@ -14,13 +14,19 @@ html, body { height: 100%; width: 100%; margin: 0; }
 }
 
 #currentChart {
+    display: inline-block;
     position: relative;
-    width: 90%;
-    height: 80%;
-    margin: auto;
-    border-style: dashed;
-    top: 10%;
+    width: 100%;
+    padding-bottom: 100%;
+    vertical-align: top;
     overflow: scroll;
+}
+
+#currentDisplay {
+    display: inline-block;
+    position: absolute;
+    top: 10px;
+    left: 0;
 }
 
 #header {

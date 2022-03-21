@@ -43,10 +43,11 @@ import { DataMap } from "./DataMap.js";
 export function BarChart() {
     let obj = {};
     let dataMap = DataMap();        // object from which the data is sourced
-    let svg, xScale, yScale, width;
+    let svg, xScale, yScale;
     // set the dimensions and margins of the graph 
-    const margin = {top: 60, right: 30, bottom: 70, left: 90};
-    const height = 400 - margin.top - margin.bottom;
+    const margin = {top: 30, right: 15, bottom: 100, left: 70};
+    const width = 800;
+    const height = 250 - margin.top - margin.bottom;
 
     obj.SetData = (data, out) => {
         console.log('Changing Chart Dataset...');
@@ -54,7 +55,7 @@ export function BarChart() {
             console.log("Datamap Set!");
             obj.SetOutput(out);
             obj.CreateDropDown();
-            obj.SetScales(1);
+            obj.SetScales(true);
             obj.Update();
         });
     }
@@ -63,12 +64,11 @@ export function BarChart() {
     obj.SetOutput = (out) => {
         // remove the current chart to change output
         d3.select('#currentDisplay').remove();
-        width = dataMap.GetDataMap().length * 10; 
         console.log(`width: ${width}%`);
 
         svg = out.append('svg')
-                .attr('width', `${width}%`)
-                .attr('height', height + margin.left + margin.right)
+                .attr('preserveAspectRatio', 'xMinYMin meet')
+                .attr('viewBox', `0 0 ${width} ${height + margin.top + margin.bottom}`)
                 .attr('margin', 'auto')
                 .attr('id', 'currentDisplay');
     }
@@ -130,26 +130,32 @@ export function BarChart() {
                 return d.key;
             }))
             // scale to the size of the output
-            .range([margin.left, width]);
+            .range([margin.left, 2000]);
+
+        
 
         // Y scale and axis
         // get y scale using largest value in the specified category
         yScale = d3.scaleLinear()
             .domain([0, extent[1]])
             // scale to size of the output
-            .range([height,0]);
+            .range([height+margin.top,margin.top]);
 
+        console.log('Scales Created!');
+        console.log('Drawing Axes');
 
         // append or select depending on if the axis already exists
         let xAxis, yAxis;
         if(axisDrawn){
+            
             xAxis = svg.append('g')
                 .attr('class', 'xAxis')
-                .attr('transform', `translate(0, ${height})`);
-
+                .attr('transform', `translate(0, ${height+margin.top})`);
+            
             yAxis = svg.append('g')
             .attr('class', 'yAxis')
             .attr('transform', `translate(${margin.left},0)`)
+            
         } else {
             xAxis = d3.select('.xAxis');
             yAxis = d3.select('.yAxis');
@@ -165,14 +171,13 @@ export function BarChart() {
             .attr('y', 0)
             .attr('x', 50)
             .attr('transform', 'rotate(90)');
-
+            
         yAxis.transition()
             .duration(1000)
             .ease(d3.easePoly)
-            .call(d3.axisLeft(yScale))
-            
-            
-        console.log('Scales Created!');
+            .call(d3.axisLeft(yScale));
+
+        console.log('Axes Drawn!');
     }
 
     //************* DRAWING AND UPDATE *************//
@@ -199,12 +204,10 @@ export function BarChart() {
                     .on('mouseout', HideValue)
                     .merge(ref)
                     .attr('x', (d) => {
-                        if(d.key == 'Afghanistan')
-                            console.log('in enter!');
-                        // offset the name slightly
                         return xScale(d.key);
                     })
                     .attr("width", xScale.bandwidth()) 
+                    .style('fill', 'blue')
                     .attr('y', yScale(0))
                     // grow the bars upwards
                     .transition()
@@ -214,7 +217,7 @@ export function BarChart() {
                     })
                     .attr("height", function(d) { 
                         // offset the height from out height
-                        return height - yScale(+d.value);
+                        return height + margin.top - yScale(+d.value);
                     });
             },
             // rect exists, requires update
@@ -222,14 +225,16 @@ export function BarChart() {
                 // shrink/grow to required height
                 update.transition() 
                     .duration(1000) 
+                    .attr("width", xScale.bandwidth()) 
+                    .attr('x', (d) => {
+                        return xScale(d.key);
+                    })
                     // without this, will not appear at the correct height
                     .attr('y', d => { 
-                        if(d.key == 'Afghanistan')
-                            console.log('in update!');
                         return yScale(+d.value)
                     })
                     .attr("height", function(d) { 
-                        return height - yScale(+d.value);
+                        return height + margin.top - yScale(+d.value);
                     });
             },
             // rect no longer needed

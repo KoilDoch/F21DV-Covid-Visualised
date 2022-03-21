@@ -36,6 +36,7 @@ export function DataMap() {
     let dataRaw = [];       // the unfiltered data
     let categories = [];    // the list of possible categories to filter by
     let dataMap = [];       // the filtered data
+    let timeframe = '2022-02-08';
 
     /**
      *  Async SetData(dataURL)

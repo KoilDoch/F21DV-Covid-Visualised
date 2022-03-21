@@ -8,6 +8,7 @@ import {BarChart} from "./js/BarChart.js";
 
 // location of the data
 const dataURL = `https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/latest/owid-covid-latest.csv`;
+const dataURLFULL = 'https://raw.githubusercontent.com/owid/covid-19-data/master/public/data/owid-covid-data.csv';
 const gridLayout = 4;
 
 // create the container for the records
