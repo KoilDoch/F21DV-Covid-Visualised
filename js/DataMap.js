@@ -6,6 +6,7 @@
 */
 
 import { BarChart } from "./BarChart.js";
+import { LineChart } from "./LineChart.js";
 
 /**
  * This function creates an object which manages the data used for the charts.
@@ -43,8 +44,14 @@ export function DataMap() {
     let dataRaw = [];       // the unfiltered data
     let categories = [];    // the list of possible categories to filter by
     let dataMap = [];       // the filtered data
+    let locations = [];
     let timeframe = '2022-02-08';
     let chart, x, y;
+
+    const ChartType = {
+        BAR: 'bar',
+        LINE: 'line'
+    }
 
     /**
      *  SetData(dataURL)
@@ -62,7 +69,7 @@ export function DataMap() {
                 // get the categories of the data
                 obj.SetCategories();
                 // create an interactive element from data
-                obj.CreateDropDown();
+                obj.CreateYDropDown();
                 // create a visual representation of the data
                 obj.CreateChart(out);
             })
@@ -101,7 +108,7 @@ export function DataMap() {
      * Creates a drop down select menu from which the user can change the data shown within this current dataset.
      * Utilises the dataMap function FilterData(x,y) to reflect this change in the data
      */
-     obj.CreateDropDown = () => {
+     obj.CreateYDropDown = () => {
         console.log('Creating Dropdown...');
 
         // geta reference to the header element
@@ -110,24 +117,7 @@ export function DataMap() {
         // add a select element to the header element
         let dropdown = header.append('select')
                         .attr('id', 'dropDown')
-                        .on('change', () => {
-                            // on a change of selection, change data to reflect
-                            console.log('Changing Currently Shown Data...')
-
-                            // get data from the node value
-                            let y = d3.select("#dropDown").node().value;
-                            console.log(`Changing to ${y}`);
-
-                            // change the title of the chart
-                            d3.select('.title')
-                                .text('Showing ' + x + " against " + y);
-
-                            // filter the data then update the chart
-                            obj.FilterData(x, y);
-
-                            // update the chart
-                            chart.Update(dataMap);
-                        });
+                        .on('change', SetY);
 
         // add options to the drop down using the categories
         dropdown.selectAll('option')
@@ -145,14 +135,36 @@ export function DataMap() {
         console.log('Dropdown created!');
     }
 
+    function SetY() {
+        // on a change of selection, change data to reflect
+        console.log('Changing Currently Shown Data...')
+
+        // get data from the node value
+        let y = d3.select("#dropDown").node().value;
+        console.log(`Changing to ${y}`);
+
+        // change the title of the chart
+        d3.select('.title')
+            .text('Showing ' + x + " against " + y);
+
+        // filter the data then update the chart
+        obj.FilterData(x, y);
+
+        // update the chart
+        chart.Update(dataMap);
+    }
+
     /**
      * Creates a chart from the dataset
      * @param {Where to display the chart} out 
      */
      obj.CreateChart = (out) => {
-        // create a new bar chart
-        chart = BarChart();
-        chart.CreateBarChart(dataMap, out);
+        // create a new chart
+        // chart = BarChart();
+        // chart.CreateBarChart(dataMap, out);
+
+        chart = LineChart();
+        chart.CreateLineChart(dataMap, out)
     }
 
     /**

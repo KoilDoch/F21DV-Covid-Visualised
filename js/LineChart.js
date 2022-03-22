@@ -39,7 +39,7 @@
  * HideValue()
  *      Hover function for the bars, removes a displayed value
  */
-export function BarChart() {
+export function LineChart() {
     let obj = {};
     let data = [];
     let svg, xScale, yScale, width;
@@ -53,7 +53,7 @@ export function BarChart() {
      * @param {data to be used} dataSet 
      * @param {area to display chart} out 
      */
-    obj.CreateBarChart = (dataSet, out) => {
+    obj.CreateLineChart = (dataSet, out) => {
         // set the data
         data = dataSet;
 
@@ -164,33 +164,29 @@ export function BarChart() {
         obj.SetScales(0);
 
         // create a reference to all the existing rect (if any)
-        let ref = svg.selectAll('rect')
+        let ref = svg.selectAll('circle')
             .data(data);
 
         // decide what to do with the data for each entry
         ref.join(
             // new rect required
             enter => {
-                enter.append('rect')
+                enter.append('circle')
                     // attach events to show values
                     .on('mouseover', DisplayValue)
                     .on('mouseout', HideValue)
                     .merge(ref)
-                    .attr('x', (d) => {
+                    .attr('cx', (d) => {
                         return xScale(d.key);
                     })
-                    .attr("width", xScale.bandwidth()) 
+                    .attr("r", '2') 
                     .style('fill', 'blue')
-                    .attr('y', yScale(0))
+                    .attr('cy', yScale(0))
                     // grow the bars upwards
                     .transition()
                     .duration(1000)
-                    .attr('y', d => { 
+                    .attr('cy', d => { 
                         return yScale(+d.value)
-                    })
-                    .attr("height", function(d) { 
-                        // offset the height from out height
-                        return height + margin.top - yScale(+d.value);
                     });
             },
             // rect exists, requires update
@@ -198,16 +194,12 @@ export function BarChart() {
                 // shrink/grow to required height
                 update.transition() 
                     .duration(1000) 
-                    .attr("width", xScale.bandwidth()) 
-                    .attr('x', (d) => {
+                    .attr('cx', (d) => {
                         return xScale(d.key);
                     })
                     // without this, will not appear at the correct height
-                    .attr('y', d => { 
+                    .attr('cy', d => { 
                         return yScale(+d.value)
-                    })
-                    .attr("height", function(d) { 
-                        return height + margin.top - yScale(+d.value);
                     });
             },
             // rect no longer needed
