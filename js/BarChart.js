@@ -42,70 +42,47 @@ import { DataMap } from "./DataMap.js";
  */
 export function BarChart() {
     let obj = {};
-    let dataMap = DataMap();        // object from which the data is sourced
-    let svg, xScale, yScale;
+    let data = [];
+    let svg, xScale, yScale, width;
     // set the dimensions and margins of the graph 
     const margin = {top: 30, right: 15, bottom: 100, left: 70};
-    const width = 800;
-    const height = 250 - margin.top - margin.bottom;
+    const height = 400 - margin.top - margin.bottom;
 
-    obj.SetData = (data, out) => {
-        console.log('Changing Chart Dataset...');
-        dataMap.SetData(data).then(() => {
-            console.log("Datamap Set!");
-            obj.SetOutput(out);
-            obj.CreateDropDown();
-            obj.SetScales(true);
-            obj.Update();
-        });
-    }
+    /**
+     * Set the data to be used for this chart.
+     * Call other functions to set up the components
+     * @param {data to be used} dataSet 
+     * @param {area to display chart} out 
+     */
+    obj.CreateBarChart = (dataSet, out) => {
+        // set the data
+        data = dataSet;
 
-    // chooses where the output should be
-    obj.SetOutput = (out) => {
-        // remove the current chart to change output
-        d3.select('#currentDisplay').remove();
-        console.log(`width: ${width}%`);
-
-        svg = out.append('svg')
-                .attr('preserveAspectRatio', 'xMinYMin meet')
-                .attr('viewBox', `0 0 ${width} ${height + margin.top + margin.bottom}`)
-                .attr('margin', 'auto')
-                .attr('id', 'currentDisplay');
+        // set where the chart is displayed
+        obj.SetOutput(out);
+        // initialise the scales
+        obj.SetScales(true);
+        // show starting data
+        obj.Update(data);
     }
 
     /**
-     * Creates a drop down select menu from which the user can change the data shown within this current dataset.
-     * Utilises the dataMap function FilterData(x,y) to reflect this change in the data
+     * This function creates a new svg to display the chart, removing any previous displays of itself before doing so.
+     *      Measurements for the chart display are set in here relative to the 'out' objects dimensions
+     *      @param {the area of the page to display this chart } out
      */
-    obj.CreateDropDown = () => {
-        console.log('Creating Dropdown...')
+    obj.SetOutput = (out) => {
+        // remove the current chart to change output
+        d3.select('#currentDisplay').remove();
+        width = data.length * 10;
 
-        // add a select element to the header element
-        let dropdown = d3.select('#header')
-                        .append('select')
-                        .attr('id', 'dropDown')
-                        .on('change', () => {
-                            // on a change of selection, change data to reflect
-                            console.log('Changing Currently Shown Data...')
-
-                            // get data from the node value
-                            let newCategory = d3.select("#dropDown").node().value;
-                            console.log(`Changing to ${newCategory}`);
-
-                            // filter the data then update the chart
-                            dataMap.FilterData('location', newCategory);
-                            obj.Update();
-                        });
-
-        // add options to the drop down using the categories
-        dropdown.selectAll('option')
-            .data(dataMap.GetCategories())
-            .enter()
-            .append("option")
-                .attr('value', d => {return d})
-                .text(d => {return d});
-
-        console.log('Dropdown created!');
+        svg = out.append('svg')
+                .attr('preserveAspectRatio', 'xMinYMin meet')
+                .attr('width', width)
+                .attr('height', height + margin.top + margin.bottom)
+                .attr('viewBox', `0 0 ${width} ${height + margin.top + margin.bottom}`)
+                .attr('margin', 'auto')
+                .attr('id', 'currentDisplay');
     }
 
     //************** AXES ******************//
@@ -116,8 +93,6 @@ export function BarChart() {
      */
     obj.SetScales = (axisDrawn) => {
         console.log('setting scales...');
-
-        let data = dataMap.GetDataMap();
         
         // get the boundaries of the y axis
         let extent = d3.extent(data, d => {
@@ -185,9 +160,8 @@ export function BarChart() {
     *   Function used to update the chart when a change is made to the data, or the data is set for the first time.
     *   Contains the join call and its associated enter, update and exit calls
     */
-    obj.Update = () => {
-        // get the data and set the scales (already drawn)
-        let data = dataMap.GetDataMap();
+    obj.Update = (updateData) => {
+        data = updateData;
         obj.SetScales(0);
 
         // create a reference to all the existing rect (if any)
